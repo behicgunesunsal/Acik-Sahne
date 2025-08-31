@@ -82,6 +82,13 @@ const seedArtists = () => {
   }));
 };
 
+const TEST_USERS = [
+  { id: 't-001', name: 'Test Kullanıcı 1', avatar: 'https://i.pravatar.cc/64?img=12', provider: 'google' },
+  { id: 't-002', name: 'Test Kullanıcı 2', avatar: 'https://i.pravatar.cc/64?img=22', provider: 'google' },
+  { id: 't-003', name: 'Test Sanatçı',   avatar: 'https://i.pravatar.cc/64?img=32', provider: 'apple' },
+  { id: 't-004', name: 'Test Admin',     avatar: 'https://i.pravatar.cc/64?img=42', provider: 'apple' },
+];
+
 export default function App() {
   const makeUser = (provider) => {
     const firsts = ['Ayşe','Mehmet','Deniz','Ece','Kerem','Selin','Can','Elif'];
@@ -128,7 +135,7 @@ export default function App() {
   const [showArtists, setShowArtists] = useState(true);
   const [showEvents, setShowEvents] = useState(true);
   const mapApi = React.useRef(null);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = usePersistedState('as.user', null);
   const [tab, setTab] = useState('user'); // 'user' | 'admin'
   const [follow, setFollow] = usePersistedState('as.follow', []);
   const [tips, setTips] = usePersistedState('as.tips', []);
@@ -424,6 +431,13 @@ export default function App() {
               <>
                 <Pressable onPress={signInGoogle} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, marginRight: 6 }}><Text>Google ile Giriş</Text></Pressable>
                 <Pressable onPress={signInApple} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>Apple ile Giriş</Text></Pressable>
+                <View style={{ flexDirection: 'row', marginLeft: 8 }}>
+                  {TEST_USERS.map(tu => (
+                    <Pressable key={tu.id} onPress={() => setUser(tu)} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 10, marginLeft: 6 }}>
+                      <Text>{tu.name.split(' ')[1] or tu.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
               </>
             ) : (
               <>
