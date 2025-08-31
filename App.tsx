@@ -1335,7 +1335,7 @@ const App: React.FC = () => {
 
   // Mobile-first UI for native platforms (iOS/Android)
   if (Platform.OS !== 'web') {
-    const cycleGenre = (dir: 1 | -1) => {
+    const cycleGenre = (dir: number) => {
       const i = GENRES.indexOf(g);
       const next = (i + dir + GENRES.length) % GENRES.length;
       setG(GENRES[next]);
