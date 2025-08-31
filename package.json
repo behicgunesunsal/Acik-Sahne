@@ -16,7 +16,10 @@
     "react-native-paper": "4.9.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "typescript": "^5.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-native": "^0.79.0"
   },
   "private": true
 }
