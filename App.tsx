@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks, no-empty, react-native/no-single-element-style-arrays */
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Platform,

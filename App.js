@@ -434,7 +434,7 @@ export default function App() {
                 <View style={{ flexDirection: 'row', marginLeft: 8 }}>
                   {TEST_USERS.map(tu => (
                     <Pressable key={tu.id} onPress={() => setUser(tu)} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 10, marginLeft: 6 }}>
-                      <Text>{tu.name.split(' ')[1] or tu.name}</Text>
+                      <Text>{tu.name.split(' ')[1] || tu.name}</Text>
                     </Pressable>
                   ))}
                 </View>
