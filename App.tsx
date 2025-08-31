@@ -1,4 +1,22 @@
 import React, { useEffect, useMemo, useState } from "react";
+import {
+  Platform,
+  Alert,
+  SafeAreaView,
+  View,
+  Text,
+  Image,
+  TextInput,
+  Pressable,
+  FlatList,
+  Modal,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
+import { storage } from "./lib/storage";
+import { download } from "./lib/download";
+import { getCurrentPosition } from "./lib/location";
+// File migrated to TSX and cross-platform utils wired in.
 
 // =====================
 // Types
@@ -141,7 +159,7 @@ const isRole = (v: string): v is Role => (ROLES as readonly string[]).includes(v
 function useLS<T>(key: string, initial: T | (() => T)) {
   const [v, sv] = useState<T>(() => {
     try {
-      const s = localStorage.getItem(key);
+      const s = storage.getItem(key as any);
       return s ? (JSON.parse(s) as T) : typeof initial === "function" ? (initial as () => T)() : initial;
     } catch {
       return typeof initial === "function" ? (initial as () => T)() : initial;
@@ -149,7 +167,7 @@ function useLS<T>(key: string, initial: T | (() => T)) {
   });
   useEffect(() => {
     try {
-      localStorage.setItem(key, JSON.stringify(v));
+      storage.setItem(key as any, JSON.stringify(v));
     } catch {
       /* noop */
     }
@@ -178,15 +196,7 @@ function useAuth() {
 // =====================
 // Export utils (CSV / ICS)
 // =====================
-const download = (name: string, text: string, mime = "text/plain") => {
-  const blob = new Blob([text], { type: `${mime};charset=utf-8` });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  a.click();
-  URL.revokeObjectURL(url);
-};
+// download now provided by lib/download
 const csvEsc = (v: unknown) => {
   const s = String(v ?? "");
   return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -229,12 +239,13 @@ const toICS = (evs: EventItem[], as: any[]) => {
     "END:VTIMEZONE",
   ];
   const nowD = new Date();
+  const dtUTC = `${nowD.getUTCFullYear()}${pad(nowD.getUTCMonth() + 1)}${pad(nowD.getUTCDate())}T${pad(nowD.getUTCHours())}${pad(nowD.getUTCMinutes())}${pad(nowD.getUTCSeconds())}Z`;
   for (const e of evs) {
     const a = as.find((x: any) => x.id === e.artistId);
     L.push(
       "BEGIN:VEVENT",
       `UID:aciksahne-${e.id}@local`,
-      `DTSTAMP:${ymd(nowD)}T${hms(nowD)}Z`,
+      `DTSTAMP:${dtUTC}`,
       `DTSTART;TZID=Europe/Istanbul:${icsDT(e.date, e.start)}`,
       `DTEND;TZID=Europe/Istanbul:${icsDT(e.date, e.end)}`,
       `SUMMARY:${a?.name ?? "Sanatçı"} · ${e.venue}`,
@@ -315,6 +326,15 @@ const MapView: React.FC<{
   height?: number;
   clustering?: boolean;
 }> = ({ artists, events = [], user, onSelect, onSelectEvent, width = 860, height = 520, clustering = true }) => {
+  if (Platform.OS !== 'web') {
+    return (
+      <div className="relative w-full h-[220px] overflow-hidden rounded-2xl border flex items-center justify-center bg-white">
+        <div className="text-sm text-gray-600 px-3 text-center">
+          Harita bileşeni şu an web üzerinde etkin. Mobil için react-native-svg veya react-native-maps entegrasyonu eklenmelidir.
+        </div>
+      </div>
+    );
+  }
   const pts = artists.map((a) => {
     const { x, y } = toXY(a.location.lat, a.location.lng, width, height);
     return { a, x, y };
@@ -446,11 +466,12 @@ const QuickShareWizard: React.FC<{
   const [duration, setDuration] = useState<number>(initialDuration);
 
   const getLoc = () => {
-    if (!navigator.geolocation) { alert("Tarayıcı konumunu desteklemiyor"); return; }
-    navigator.geolocation.getCurrentPosition(
-      (p) => { setLat(p.coords.latitude); setLng(p.coords.longitude); },
-      () => alert("Konum alınamadı. Elle giriniz.")
-    );
+    getCurrentPosition()
+      .then((p) => { setLat(p.latitude); setLng(p.longitude); })
+      .catch(() => {
+        if (Platform.OS === 'web') alert("Konum alınamadı. Elle giriniz.");
+        else Alert.alert("Konum alınamadı", "Elle giriniz.");
+      });
   };
 
   return (
@@ -1312,6 +1333,156 @@ const App: React.FC = () => {
     if (!isRole(role)) setRole("Dinleyen");
   }, [role, setRole]);
 
+  // Mobile-first UI for native platforms (iOS/Android)
+  if (Platform.OS !== 'web') {
+    const cycleGenre = (dir: 1 | -1) => {
+      const i = GENRES.indexOf(g);
+      const next = (i + dir + GENRES.length) % GENRES.length;
+      setG(GENRES[next]);
+    };
+
+    const [detailOpen, setDetailOpen] = useState(false);
+
+    const openDetail = (a: any) => { setSel(a); setDetailOpen(true); };
+    const closeDetail = () => { setDetailOpen(false); setSel(null); };
+
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+        <View style={{ padding: 12, gap: 12 }}>
+          {/* Header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontSize: 20, fontWeight: '700' }}>Açık Sahne</Text>
+              <Text style={{ marginLeft: 8, color: '#64748b', fontSize: 12 }}>Mobil</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {!user ? (
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <Pressable onPress={() => signIn('google')} style={styles.btn}><Text style={styles.btnText}>Google</Text></Pressable>
+                  <Pressable onPress={() => signIn('apple')} style={styles.btn}><Text style={styles.btnText}>Apple</Text></Pressable>
+                </View>
+              ) : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Image source={{ uri: user.avatar }} style={{ width: 28, height: 28, borderRadius: 14 }} />
+                  <Text style={{ fontSize: 14 }}>{user.name}</Text>
+                  <Pressable
+                    onPress={() => {
+                      const i = ROLES.indexOf(role);
+                      setRole(ROLES[(i + 1) % ROLES.length]);
+                    }}
+                    style={[styles.btn, { paddingVertical: 6 }]}>
+                    <Text style={styles.btnTextSmall}>{role}</Text>
+                  </Pressable>
+                  <Pressable onPress={signOut} style={styles.btn}><Text style={styles.btnText}>Çıkış</Text></Pressable>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Filters */}
+          <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 12, borderColor: '#e5e7eb', borderWidth: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ fontWeight: '600' }}>Tür:</Text>
+                <Pressable onPress={() => cycleGenre(-1)} style={styles.btnSm}><Text style={styles.btnTextSmall}>◀︎</Text></Pressable>
+                <Text style={{ fontSize: 14 }}>{g}</Text>
+                <Pressable onPress={() => cycleGenre(1)} style={styles.btnSm}><Text style={styles.btnTextSmall}>▶︎</Text></Pressable>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ fontWeight: '600' }}>Yarıçap:</Text>
+                <TextInput
+                  value={String(geo)}
+                  onChangeText={(t) => setGeo(Math.max(50, Number(t) || 0))}
+                  keyboardType="numeric"
+                  style={{ width: 80, paddingVertical: 6, paddingHorizontal: 8, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8 }}
+                />
+                <Text style={{ color: '#64748b' }}>m</Text>
+              </View>
+            </View>
+            <View style={{ marginTop: 8, flexDirection: 'row', gap: 8 }}>
+              <Pressable
+                onPress={() => getCurrentPosition().then(p => setPos({ lat: p.latitude, lng: p.longitude })).catch(() => Alert.alert('Konum alınamadı'))}
+                style={styles.btn}
+              >
+                <Text style={styles.btnText}>Konumumu Al</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* List */}
+          <View style={{ flex: 1 }}>
+            {filtered.length === 0 ? (
+              <Text style={{ color: '#475569' }}>Sonuç yok. Yarıçapı artırmayı deneyin.</Text>
+            ) : (
+              <FlatList
+                data={filtered.slice(0, 50)}
+                keyExtractor={(item: any) => String(item.id)}
+                renderItem={({ item }) => {
+                  const el = (now() - item.startedAt) / 60000;
+                  const followingIt = following.includes(item.id);
+                  return (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 8, backgroundColor: 'white', borderRadius: 12, marginBottom: 8, borderColor: '#e5e7eb', borderWidth: 1 }}>
+                      <Image source={{ uri: item.avatar }} style={{ width: 44, height: 44, borderRadius: 22, marginRight: 10 }} />
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <Text style={{ fontWeight: '600', marginRight: 6 }}>{item.name}</Text>
+                          {item.verified ? <Text style={{ color: '#059669', fontSize: 12 }}>✓</Text> : null}
+                          {item.isLive ? <Text style={{ color: '#059669', fontSize: 12, marginLeft: 6 }}>• Aktif</Text> : null}
+                        </View>
+                        <Text style={{ color: '#475569', fontSize: 13 }}>{item.genre} · {fmt(el)} sahnede · Plan {fmt(item.plannedMinutes)}</Text>
+                      </View>
+                      <Pressable onPress={() => openDetail(item)} style={styles.btnSm}><Text style={styles.btnTextSmall}>Aç</Text></Pressable>
+                      <Pressable onPress={() => toggleFollow(item.id)} style={[styles.btnSm, followingIt ? styles.btnActive : undefined]}>
+                        <Text style={[styles.btnTextSmall, followingIt ? styles.btnActiveText : undefined]}>{followingIt ? 'Takiptesin' : '+ Takip'}</Text>
+                      </Pressable>
+                    </View>
+                  );
+                }}
+              />
+            )}
+            <Text style={{ marginTop: 4, color: '#64748b', fontSize: 12 }}>(Yürüdükçe {geo} m yakındaki canlılar için bildirim)</Text>
+          </View>
+
+          {/* Detail Modal */}
+          <Modal visible={detailOpen} animationType="slide" onRequestClose={closeDetail}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+              <View style={{ padding: 12, gap: 12 }}>
+                <Pressable onPress={closeDetail} style={[styles.btn, { alignSelf: 'flex-start' }]}><Text style={styles.btnText}>Kapat</Text></Pressable>
+                {sel && (
+                  <ScrollView>
+                    <View style={{ alignItems: 'center', marginBottom: 12 }}>
+                      <Image source={{ uri: sel.avatar }} style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 8 }} />
+                      <Text style={{ fontSize: 20, fontWeight: '700' }}>{sel.name}</Text>
+                      <Text style={{ color: '#475569', marginTop: 4 }}>{sel.genre} {sel.verified ? '· ✓' : ''} {sel.isLive ? '· • Aktif' : ''}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', marginBottom: 12 }}>
+                      <Pressable onPress={() => toggleFollow(sel.id)} style={[styles.btn]}><Text style={styles.btnText}>{following.includes(sel.id) ? 'Takiptesin' : '+ Takip et'}</Text></Pressable>
+                    </View>
+                    {user ? (
+                      <View style={{ backgroundColor: '#f8fafc', borderRadius: 12, padding: 12, borderColor: '#e5e7eb', borderWidth: 1 }}>
+                        <Text style={{ fontWeight: '600', marginBottom: 8 }}>Bahşiş Gönder</Text>
+                        <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
+                          {[20,50,100].map(a => (
+                            <Pressable key={a} onPress={() => { addTip(sel.id, a, false, ''); Alert.alert('Gönderildi', `₺${a} bahşiş gönderildi`); }} style={styles.btn}>
+                              <Text style={styles.btnText}>₺{a}</Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      </View>
+                    ) : (
+                      <Text style={{ color: '#475569' }}>Bahşiş için giriş yapınız.</Text>
+                    )}
+                  </ScrollView>
+                )}
+              </View>
+            </SafeAreaView>
+          </Modal>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Web UI
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -1361,8 +1532,9 @@ const App: React.FC = () => {
                   <span className="text-xs">m</span>
                 </label>
                 <Button onClick={() => {
-                  if (!navigator.geolocation) return alert("Tarayıcı konumu desteklemiyor");
-                  navigator.geolocation.getCurrentPosition((p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude }), () => alert("Konum alınamadı"));
+                  getCurrentPosition()
+                    .then((p) => setPos({ lat: p.latitude, lng: p.longitude }))
+                    .catch(() => { if (Platform.OS === 'web') alert("Konum alınamadı"); else Alert.alert("Konum alınamadı"); });
                 }}>Konumumu Al</Button>
               </div>
             </Card>
@@ -1462,3 +1634,39 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+const styles = StyleSheet.create({
+  btn: {
+    backgroundColor: '#ffffff',
+    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  btnSm: {
+    backgroundColor: '#ffffff',
+    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginLeft: 6,
+  },
+  btnText: {
+    color: '#111827',
+    fontWeight: '600',
+  },
+  btnTextSmall: {
+    color: '#111827',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  btnActive: {
+    backgroundColor: '#ecfdf5',
+    borderColor: '#a7f3d0',
+  },
+  btnActiveText: {
+    color: '#065f46',
+  },
+});
