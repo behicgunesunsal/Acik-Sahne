@@ -533,10 +533,10 @@ export default function App() {
                   </View>
                     <Pressable onPress={() => openDetail(item)} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, marginLeft: 6 }}><Text>Aç</Text></Pressable>
                     <Pressable onPress={() => {
-                      if (Platform.OS !== 'web' && mapApi.current && mapApi.current.centerTo) mapApi.current.centerTo(item.location.lat, item.location.lng);
+                      if (Platform.OS !== 'web' && mapApi.current && mapApi.current.centerTo) { mapApi.current.centerTo(item.location.lat, item.location.lng); }
                       else {
                         const url = `https://www.google.com/maps/search/?api=1&query=${item.location.lat},${item.location.lng}`;
-                        if (Platform.OS === 'web' && typeof window !== 'undefined') window.open(url, '_blank'); else Linking.openURL(url).catch(()=>{});
+                        if (Platform.OS === 'web' && typeof window !== 'undefined') { window.open(url, '_blank'); } else { Linking.openURL(url).catch(()=>{}); }
                       }
                     }} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, marginLeft: 6 }}>
                       <Text>Haritada</Text>
@@ -601,7 +601,7 @@ export default function App() {
                     </Pressable>
                     <Pressable onPress={() => {
                       const url = `https://www.google.com/maps/search/?api=1&query=${sel.location.lat},${sel.location.lng}`;
-                      if (Platform.OS === 'web' && typeof window !== 'undefined') window.open(url, '_blank'); else Linking.openURL(url).catch(()=>{});
+                      if (Platform.OS === 'web' && typeof window !== 'undefined') { window.open(url, '_blank'); } else { Linking.openURL(url).catch(()=>{}); }
                     }} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}>
                       <Text>Google Maps</Text>
                     </Pressable>
