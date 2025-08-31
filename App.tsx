@@ -456,8 +456,18 @@ const MobileMap: React.FC<{
   onSelect: (a: any) => void;
   onSelectEvent?: (ev: EventItem) => void;
 }> = ({ artists, events, pos, onSelect, onSelectEvent }) => {
+  const ENABLE_NATIVE_MAP = false; // temporarily disabled to avoid bundler issues
+  if (ENABLE_NATIVE_MAP === false) {
+    return (
+      <View style={{ height: 220, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
+        <Text style={{ color: '#475569', paddingHorizontal: 12, textAlign: 'center' }}>
+          Harita geçici olarak devre dışı. Listeden seçim yapabilirsiniz.
+        </Text>
+      </View>
+    );
+  }
   let MapsMod: any = null;
-  try { MapsMod = require('react-native-maps'); } catch { MapsMod = null; }
+  try { const req: any = eval('require'); MapsMod = req('react-native-maps'); } catch { MapsMod = null; }
   if (!MapsMod) {
     return (
       <View style={{ height: 220, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
