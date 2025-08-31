@@ -19,7 +19,14 @@
     "expo-sharing": "~13.0.1",
     "@react-native-async-storage/async-storage": "~2.1.0",
     "react-native-svg": "^15.2.0",
-    "react-native-maps": "^1.14.0"
+    "react-native-maps": "^1.14.0",
+    "expo-auth-session": "~6.0.0"
+  },
+  "peerDependencies": {
+  },
+  
+  "optionalDependencies": {
+    "expo-apple-authentication": "~6.3.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
