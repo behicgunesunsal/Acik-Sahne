@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Platform, View, Text } from "react-native";
 
 // =====================
 // Types
@@ -446,7 +447,7 @@ const QuickShareWizard: React.FC<{
   const [duration, setDuration] = useState<number>(initialDuration);
 
   const getLoc = () => {
-    if (!navigator.geolocation) { alert("Tarayıcı konumunu desteklemiyor"); return; }
+    if (Platform.OS !== "web" || !navigator.geolocation) { alert("Tarayıcı konumunu desteklemiyor"); return; }
     navigator.geolocation.getCurrentPosition(
       (p) => { setLat(p.coords.latitude); setLng(p.coords.longitude); },
       () => alert("Konum alınamadı. Elle giriniz.")
@@ -1244,6 +1245,14 @@ const Tabs: React.FC<{ tab: TabKey; setTab: (k: TabKey) => void; role: Role }> =
 // App
 // =====================
 const App: React.FC = () => {
+  if (Platform.OS !== "web") {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text>Bu uygulama sadece web üzerinde çalışır.</Text>
+      </View>
+    );
+  }
+
   const { user, setUser, signIn, signOut } = useAuth();
   const [role, setRole] = useLS<Role>("acik-sahne-role", "Dinleyen");
 
@@ -1361,7 +1370,7 @@ const App: React.FC = () => {
                   <span className="text-xs">m</span>
                 </label>
                 <Button onClick={() => {
-                  if (!navigator.geolocation) return alert("Tarayıcı konumu desteklemiyor");
+                  if (Platform.OS !== "web" || !navigator.geolocation) return alert("Tarayıcı konumu desteklemiyor");
                   navigator.geolocation.getCurrentPosition((p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude }), () => alert("Konum alınamadı"));
                 }}>Konumumu Al</Button>
               </div>
