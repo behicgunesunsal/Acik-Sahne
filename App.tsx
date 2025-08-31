@@ -447,6 +447,52 @@ const MapView: React.FC<{
 };
 
 // =====================
+// Mobile Map (react-native-maps if available)
+// =====================
+const MobileMap: React.FC<{
+  artists: any[];
+  events: EventItem[];
+  pos: { lat: number; lng: number };
+  onSelect: (a: any) => void;
+  onSelectEvent?: (ev: EventItem) => void;
+}> = ({ artists, events, pos, onSelect, onSelectEvent }) => {
+  let MapsMod: any = null;
+  try { MapsMod = require('react-native-maps'); } catch { MapsMod = null; }
+  if (!MapsMod) {
+    return (
+      <View style={{ height: 220, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
+        <Text style={{ color: '#475569', paddingHorizontal: 12, textAlign: 'center' }}>
+          Harita için react-native-maps gerekli. Lütfen "expo install react-native-maps" komutunu çalıştırın.
+        </Text>
+      </View>
+    );
+  }
+  const MapViewRN = MapsMod.default ?? MapsMod;
+  const Marker = MapsMod.Marker ?? MapsMod.MarkerAnimated ?? (() => null);
+
+  const region = {
+    latitude: pos.lat || 41.0,
+    longitude: pos.lng || 29.05,
+    latitudeDelta: 0.03,
+    longitudeDelta: 0.03,
+  } as const;
+
+  return (
+    <View style={{ height: 260, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#e5e7eb' }}>
+      <MapViewRN style={{ flex: 1 }} initialRegion={region}>
+        {artists.map((a: any) => (
+          <Marker key={`a-${a.id}`} coordinate={{ latitude: a.location.lat, longitude: a.location.lng }} title={a.name} description={a.genre} onPress={() => onSelect(a)} />
+        ))}
+        {events.map((e: EventItem) => (
+          <Marker key={`e-${e.id}`} coordinate={{ latitude: e.lat, longitude: e.lng }} pinColor="#7c3aed" title={e.venue} description={`${e.date} ${e.start}–${e.end}`} onPress={() => onSelectEvent && onSelectEvent(e)} />
+        ))}
+        <Marker key="me" coordinate={{ latitude: region.latitude, longitude: region.longitude }} title="Ben" pinColor="#059669" />
+      </MapViewRN>
+    </View>
+  );
+};
+
+// =====================
 // Quick Share (Sanatçı) — reusable mini wizard
 // =====================
 const QuickShareWizard: React.FC<{
@@ -1408,6 +1454,18 @@ const App: React.FC = () => {
               </Pressable>
             </View>
           </View>
+
+          {/* Map */}
+          <MobileMap
+            artists={filtered}
+            events={events}
+            pos={pos}
+            onSelect={(a) => openDetail(a)}
+            onSelectEvent={(ev) => {
+              const a = artists.find((x) => x.id === ev.artistId);
+              if (a) openDetail(a);
+            }}
+          />
 
           {/* List */}
           <View style={{ flex: 1 }}>
