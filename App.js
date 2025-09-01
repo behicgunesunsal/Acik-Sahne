@@ -137,9 +137,16 @@ export default function App() {
   const mapApi = React.useRef(null);
   const [user, setUser] = usePersistedState('as.user', null);
   const [tab, setTab] = useState('user'); // 'user' | 'admin'
+  const [loginOpen, setLoginOpen] = useState(false);
   const [follow, setFollow] = usePersistedState('as.follow', []);
   const [tips, setTips] = usePersistedState('as.tips', []);
   const [adminQ, setAdminQ] = useState('');
+  const [adminOnlyActive, setAdminOnlyActive] = useState(false);
+  const [adminOnlyVerified, setAdminOnlyVerified] = useState(false);
+  const [adminOnlyLive, setAdminOnlyLive] = useState(false);
+  const [adminPage, setAdminPage] = useState(0);
+  const [adminSel, setAdminSel] = useState([]); // selected artist ids
+  const ADMIN_PAGE_SIZE = 20;
   const [adminForm, setAdminForm] = useState({ artistIdx: 0, date: todayISO(), start: '18:00', end: '19:00', venue: 'Açık Sahne', lat: 41.0, lng: 29.05 });
   const [dayOffset, setDayOffset] = useState(0);
   const filtered = useMemo(() => {
@@ -325,9 +332,9 @@ export default function App() {
       );
     } catch (e) {
       return (
-        <View style={{ height: 220, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
-          <Text style={{ color: '#475569', paddingHorizontal: 12, textAlign: 'center' }}>
-            Harita için react-native-maps gerekli. "expo install react-native-maps" sonrası tekrar deneyin.
+        <View style={{ height: 140, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
+          <Text style={{ color: '#64748b', paddingHorizontal: 12, textAlign: 'center', fontSize: 13 }}>
+            Harita modülü yüklü değil. Listeden seçim yapabilir veya modülü ekleyebilirsiniz.
           </Text>
         </View>
       );
@@ -424,61 +431,68 @@ export default function App() {
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={{ fontSize: 20, fontWeight: '700' }}>Açık Sahne</Text>
-            <Text style={{ marginLeft: 8, color: '#64748b', fontSize: 12 }}>Mobil/Web</Text>
+            <Text style={{ marginLeft: 8, color: '#64748b', fontSize: 12 }}>Mobil</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            {!user ? (
-              <>
-                <Pressable onPress={signInGoogle} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, marginRight: 6 }}><Text>Google ile Giriş</Text></Pressable>
-                <Pressable onPress={signInApple} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>Apple ile Giriş</Text></Pressable>
-                <View style={{ flexDirection: 'row', marginLeft: 8 }}>
-                  {TEST_USERS.map(tu => (
-                    <Pressable key={tu.id} onPress={() => setUser(tu)} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 10, marginLeft: 6 }}>
-                      <Text>{tu.name.split(' ')[1] || tu.name}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </>
+            {user ? (
+              <Pressable onPress={() => setLoginOpen(v=>!v)} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }}>
+                <Image source={{ uri: user.avatar }} style={{ width: 22, height: 22, borderRadius: 11, marginRight: 6 }} />
+                <Text>{user.name.split(' ')[0]}</Text>
+              </Pressable>
             ) : (
-              <>
-                <Image source={{ uri: user.avatar }} style={{ width: 28, height: 28, borderRadius: 14, marginRight: 8 }} />
-                <Text style={{ marginRight: 8 }}>{user.name}</Text>
-                <Pressable onPress={() => setUser(null)} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>Çıkış</Text></Pressable>
-              </>
+              <Pressable onPress={() => setLoginOpen(v=>!v)} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12 }}>
+                <Text>Giriş</Text>
+              </Pressable>
             )}
-            <View style={{ marginLeft: 10, flexDirection: 'row' }}>
-              <Pressable onPress={() => setTab('user')} style={{ backgroundColor: tab==='user'? '#ecfdf5':'#fff', borderColor: tab==='user'? '#a7f3d0':'#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, marginRight: 6 }}><Text>Kullanıcı</Text></Pressable>
-              <Pressable onPress={() => setTab('admin')} style={{ backgroundColor: tab==='admin'? '#fef3c7':'#fff', borderColor: tab==='admin'? '#fde68a':'#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>Admin</Text></Pressable>
+            <View style={{ marginLeft: 8, flexDirection: 'row' }}>
+              <Pressable onPress={() => setTab('user')} style={{ backgroundColor: tab==='user'? '#ecfdf5':'#fff', borderColor: tab==='user'? '#a7f3d0':'#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, marginRight: 6 }}><Text>Kullanıcı</Text></Pressable>
+              <Pressable onPress={() => setTab('admin')} style={{ backgroundColor: tab==='admin'? '#fef3c7':'#fff', borderColor: tab==='admin'? '#fde68a':'#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }}><Text>Admin</Text></Pressable>
             </View>
           </View>
         </View>
-
-        <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 12, borderColor: '#e5e7eb', borderWidth: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontWeight: '600', marginRight: 8 }}>Tür:</Text>
-              <Pressable onPress={() => cycleGenre(-1)} style={{ paddingHorizontal: 8, paddingVertical: 6, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, marginRight: 6 }}><Text>◀︎</Text></Pressable>
-              <Text>{g}</Text>
-              <Pressable onPress={() => cycleGenre(1)} style={{ paddingHorizontal: 8, paddingVertical: 6, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, marginLeft: 6 }}><Text>▶︎</Text></Pressable>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontWeight: '600', marginRight: 6 }}>Yarıçap:</Text>
-              <TextInput value={String(geo)} onChangeText={(t) => setGeo(Math.max(50, Number(t) || 0))} keyboardType="numeric" style={{ width: 80, paddingVertical: 6, paddingHorizontal: 8, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8 }} />
-              <Text style={{ marginLeft: 6, color: '#64748b' }}>m</Text>
-            </View>
+        {loginOpen && (
+          <View style={{ position: 'absolute', right: 12, top: 46, backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, borderRadius: 12, padding: 8, zIndex: 50, gap: 6 }}>
+            {!user ? (
+              <>
+                <Pressable onPress={() => { setLoginOpen(false); signInGoogle(); }} style={{ paddingHorizontal: 10, paddingVertical: 8 }}><Text>Google ile Giriş</Text></Pressable>
+                <Pressable onPress={() => { setLoginOpen(false); signInApple(); }} style={{ paddingHorizontal: 10, paddingVertical: 8 }}><Text>Apple ile Giriş</Text></Pressable>
+                <View style={{ height: 1, backgroundColor: '#e5e7eb', marginVertical: 4 }} />
+                {TEST_USERS.map(tu => (
+                  <Pressable key={tu.id} onPress={() => { setUser(tu); setLoginOpen(false); }} style={{ paddingHorizontal: 10, paddingVertical: 8 }}>
+                    <Text>{tu.name}</Text>
+                  </Pressable>
+                ))}
+              </>
+            ) : (
+              <Pressable onPress={() => { setUser(null); setLoginOpen(false); }} style={{ paddingHorizontal: 10, paddingVertical: 8 }}><Text>Çıkış</Text></Pressable>
+            )}
           </View>
-          <View style={{ marginTop: 8, flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <Pressable onPress={getLoc} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}>
-              <Text>Konumumu Al</Text>
+        )}
+
+        <View style={{ backgroundColor: 'white', borderRadius: 14, padding: 10, borderColor: '#e5e7eb', borderWidth: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 14 }}>
+              <Text style={{ fontWeight: '600', marginRight: 6 }}>Tür:</Text>
+              <Pressable onPress={() => cycleGenre(-1)} style={{ paddingHorizontal: 6, paddingVertical: 4, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, marginRight: 6 }}><Text>◀︎</Text></Pressable>
+              <Text>{g}</Text>
+              <Pressable onPress={() => cycleGenre(1)} style={{ paddingHorizontal: 6, paddingVertical: 4, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, marginLeft: 6 }}><Text>▶︎</Text></Pressable>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 14 }}>
+              <Text style={{ fontWeight: '600', marginRight: 6 }}>Yarıçap:</Text>
+              <TextInput value={String(geo)} onChangeText={(t) => setGeo(Math.max(50, Number(t) || 0))} keyboardType="numeric" style={{ width: 70, paddingVertical: 4, paddingHorizontal: 6 }} />
+              <Text style={{ marginLeft: 4, color: '#64748b' }}>m</Text>
+            </View>
+            <Pressable onPress={getLoc} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 }}>
+              <Text>Konum</Text>
             </Pressable>
-            <Pressable onPress={() => setShowLiveOnly(!showLiveOnly)} style={{ backgroundColor: showLiveOnly ? '#ecfdf5' : '#fff', borderColor: showLiveOnly ? '#a7f3d0' : '#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}>
-              <Text>{showLiveOnly ? '• Yalnızca canlı' : 'Tüm sanatçılar'}</Text>
+            <Pressable onPress={() => setShowLiveOnly(!showLiveOnly)} style={{ backgroundColor: showLiveOnly ? '#ecfdf5' : '#fff', borderColor: showLiveOnly ? '#a7f3d0' : '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 }}>
+              <Text>{showLiveOnly ? 'Yalnızca canlı' : 'Tümü'}</Text>
             </Pressable>
-            <Pressable onPress={() => setShowArtists(!showArtists)} style={{ backgroundColor: showArtists ? '#ecfdf5' : '#fff', borderColor: showArtists ? '#a7f3d0' : '#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}>
-              <Text>{showArtists ? 'Sanatçı: Açık' : 'Sanatçı: Kapalı'}</Text>
+            <Pressable onPress={() => setShowArtists(!showArtists)} style={{ backgroundColor: showArtists ? '#ecfdf5' : '#fff', borderColor: showArtists ? '#a7f3d0' : '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 }}>
+              <Text>Sanatçı {showArtists ? 'Açık' : 'Kapalı'}</Text>
             </Pressable>
-            <Pressable onPress={() => setShowEvents(!showEvents)} style={{ backgroundColor: showEvents ? '#f5f3ff' : '#fff', borderColor: showEvents ? '#ddd6fe' : '#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}>
-              <Text>{showEvents ? 'Etkinlik: Açık' : 'Etkinlik: Kapalı'}</Text>
+            <Pressable onPress={() => setShowEvents(!showEvents)} style={{ backgroundColor: showEvents ? '#f5f3ff' : '#fff', borderColor: showEvents ? '#ddd6fe' : '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 }}>
+              <Text>Etkinlik {showEvents ? 'Açık' : 'Kapalı'}</Text>
             </Pressable>
           </View>
         </View>
@@ -517,28 +531,63 @@ export default function App() {
           ) : (
             <FlatList
               data={[...filtered].sort((a,b)=> (follow.includes(b.id)?1:0)-(follow.includes(a.id)?1:0)).slice(0,50)}
+              numColumns={2}
+              columnWrapperStyle={{ gap: 8 }}
+              contentContainerStyle={{ paddingBottom: 8 }}
               keyExtractor={(item) => String(item.id)}
+              ListHeaderComponent={() => (
+                <View style={{ backgroundColor: '#ffffffee', borderColor: '#e5e7eb', borderWidth: 1, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 6, marginBottom: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                    <Text style={{ fontWeight: '600' }}>Filtre:</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+                      <Text style={{ color: '#111827', marginRight: 6 }}>Tür: {g}</Text>
+                      <Pressable onPress={() => cycleGenre(-1)} style={{ paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, marginRight: 4 }}><Text>◀︎</Text></Pressable>
+                      <Pressable onPress={() => cycleGenre(1)} style={{ paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8 }}><Text>▶︎</Text></Pressable>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+                      <Text style={{ color: '#111827' }}>Yarıçap: {geo}m</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+                      <Text style={{ color: '#111827' }}>Sonuç: {filtered.length}</Text>
+                    </View>
+                    <Pressable onPress={getLoc} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+                      <Text>Konum</Text>
+                    </Pressable>
+                    <Pressable onPress={() => setShowLiveOnly(v=>!v)} style={{ backgroundColor: showLiveOnly? '#ecfdf5':'#fff', borderColor: showLiveOnly? '#a7f3d0':'#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+                      <Text>{showLiveOnly? 'Yalnızca canlı':'Tümü'}</Text>
+                    </Pressable>
+                    <Pressable onPress={() => setShowArtists(v=>!v)} style={{ backgroundColor: showArtists? '#ecfdf5':'#fff', borderColor: showArtists? '#a7f3d0':'#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+                      <Text>Sanatçı {showArtists? 'Açık':'Kapalı'}</Text>
+                    </Pressable>
+                    <Pressable onPress={() => setShowEvents(v=>!v)} style={{ backgroundColor: showEvents? '#f5f3ff':'#fff', borderColor: showEvents? '#ddd6fe':'#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+                      <Text>Etkinlik {showEvents? 'Açık':'Kapalı'}</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+              stickyHeaderIndices={[0]}
               renderItem={({ item }) => {
                 const el = (now() - item.startedAt) / 60000;
+                const dist = Math.round(hav(pos, item.location));
                 return (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 8, backgroundColor: 'white', borderRadius: 12, marginBottom: 8, borderColor: '#e5e7eb', borderWidth: 1 }}>
-                    <Image source={{ uri: item.avatar }} style={{ width: 44, height: 44, borderRadius: 22, marginRight: 10 }} />
+                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 6, backgroundColor: 'white', borderRadius: 12, marginBottom: 8, borderColor: '#e5e7eb', borderWidth: 1 }}>
+                    <Image source={{ uri: item.avatar }} style={{ width: 40, height: 40, borderRadius: 20, marginRight: 8 }} />
                     <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ fontWeight: '600', marginRight: 6 }}>{item.name}</Text>
-                        {item.verified ? <Text style={{ color: '#059669', fontSize: 12 }}>✓</Text> : null}
-                        {item.isLive ? <Text style={{ color: '#059669', fontSize: 12, marginLeft: 6 }}>• Aktif</Text> : null}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <Text style={{ fontWeight: '600', marginRight: 4 }}>{item.name}</Text>
+                        {item.verified ? <Text style={{ color: '#059669', fontSize: 11 }}>✓</Text> : null}
+                        {item.isLive ? <Text style={{ color: '#059669', fontSize: 11, marginLeft: 6 }}>• Canlı</Text> : null}
                       </View>
-                      <Text style={{ color: '#475569', fontSize: 13 }}>{item.genre} · {fmt(el)} sahnede · Plan {fmt(item.plannedMinutes)}</Text>
-                  </View>
-                    <Pressable onPress={() => openDetail(item)} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, marginLeft: 6 }}><Text>Aç</Text></Pressable>
+                      <Text style={{ color: '#475569', fontSize: 12 }} numberOfLines={1}>{item.genre} · {fmt(el)} · Plan {fmt(item.plannedMinutes)} · {dist}m</Text>
+                    </View>
+                    <Pressable onPress={() => openDetail(item)} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 10, marginLeft: 6 }}><Text>Aç</Text></Pressable>
                     <Pressable onPress={() => {
                       if (Platform.OS !== 'web' && mapApi.current && mapApi.current.centerTo) { mapApi.current.centerTo(item.location.lat, item.location.lng); }
                       else {
                         const url = `https://www.google.com/maps/search/?api=1&query=${item.location.lat},${item.location.lng}`;
                         if (Platform.OS === 'web' && typeof window !== 'undefined') { window.open(url, '_blank'); } else { Linking.openURL(url).catch(()=>{}); }
                       }
-                    }} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, marginLeft: 6 }}>
+                    }} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 10, marginLeft: 6 }}>
                       <Text>Haritada</Text>
                     </Pressable>
                   </View>
@@ -650,11 +699,66 @@ export default function App() {
             </View>
             <View /* admin tools */ style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
               <TextInput placeholder="Search" value={adminQ} onChangeText={(t)=>setAdminQ(t)} style={{ minWidth: 160, paddingVertical: 6, paddingHorizontal: 8, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8 }} />
+              <Pressable onPress={()=>setAdminOnlyActive(v=>!v)} style={{ backgroundColor: adminOnlyActive? '#ecfdf5':'#fff', borderColor: adminOnlyActive? '#a7f3d0':'#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 }}>
+                <Text>Aktif {adminOnlyActive? '✓':''}</Text>
+              </Pressable>
+              <Pressable onPress={()=>setAdminOnlyVerified(v=>!v)} style={{ backgroundColor: adminOnlyVerified? '#ecfeff':'#fff', borderColor: adminOnlyVerified? '#a5f3fc':'#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 }}>
+                <Text>Doğrulanan {adminOnlyVerified? '✓':''}</Text>
+              </Pressable>
+              <Pressable onPress={()=>setAdminOnlyLive(v=>!v)} style={{ backgroundColor: adminOnlyLive? '#f0fdf4':'#fff', borderColor: adminOnlyLive? '#bbf7d0':'#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 }}>
+                <Text>Canlı {adminOnlyLive? '✓':''}</Text>
+              </Pressable>
               <Pressable onPress={() => downloadFile(`artists-${todayISO()}.csv`, csvArtists(artists), 'text/csv')} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}><Text>Sanatçıları CSV</Text></Pressable>
               <Pressable onPress={() => downloadFile(`events-${todayISO()}.csv`, csvEvents(events, artists), 'text/csv')} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}><Text>Etkinlikleri CSV</Text></Pressable>
               <Pressable onPress={() => downloadFile(`events-all.ics`, toICS(events, artists), 'text/calendar')} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}><Text>Tümünü .ics</Text></Pressable>
+              <Pressable onPress={() => {
+                const fs = artists
+                  .filter(a => (adminQ||'').trim()==='' || a.name.toLowerCase().includes(adminQ.toLowerCase()) || a.genre.toLowerCase().includes(adminQ.toLowerCase()))
+                  .filter(a => !adminOnlyActive || a.active!==false)
+                  .filter(a => !adminOnlyVerified || !!a.verified)
+                  .filter(a => !adminOnlyLive || !!a.isLive);
+                downloadFile(`artists-filtered-${todayISO()}.csv`, csvArtists(fs), 'text/csv');
+              }} style={{ backgroundColor: '#ecfdf5', borderColor: '#a7f3d0', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}><Text>Filtreli Sanatçı CSV</Text></Pressable>
+              <Pressable onPress={() => {
+                const fs = artists
+                  .filter(a => (adminQ||'').trim()==='' || a.name.toLowerCase().includes(adminQ.toLowerCase()) || a.genre.toLowerCase().includes(adminQ.toLowerCase()))
+                  .filter(a => !adminOnlyActive || a.active!==false)
+                  .filter(a => !adminOnlyVerified || !!a.verified)
+                  .filter(a => !adminOnlyLive || !!a.isLive);
+                const ids = new Set(fs.map(a=>a.id));
+                const evFiltered = events.filter(e => ids.has(e.artistId));
+                downloadFile(`events-filtered-${todayISO()}.csv`, csvEvents(evFiltered, artists), 'text/csv');
+              }} style={{ backgroundColor: '#ecfeff', borderColor: '#a5f3fc', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}><Text>Filtreli Etkinlik CSV</Text></Pressable>
+                {adminSel.length > 0 && (
+                <>
+                  <Pressable onPress={() => {
+                    const ids = new Set(adminSel);
+                    const sel = artists.filter(a => ids.has(a.id));
+                    downloadFile(`artists-selected-${todayISO()}.csv`, csvArtists(sel), 'text/csv');
+                  }} style={{ backgroundColor: '#e0e7ff', borderColor: '#c7d2fe', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}><Text>Seçili Sanatçı CSV</Text></Pressable>
+                  <Pressable onPress={() => {
+                    const ids = new Set(adminSel);
+                    const evSel = events.filter(e => ids.has(e.artistId));
+                    downloadFile(`events-selected-${todayISO()}.csv`, csvEvents(evSel, artists), 'text/csv');
+                  }} style={{ backgroundColor: '#e0f2fe', borderColor: '#bae6fd', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}><Text>Seçili Etkinlik CSV</Text></Pressable>
+                  <Pressable onPress={() => {
+                    const ids = new Set(adminSel);
+                    const evSel = events.filter(e => ids.has(e.artistId));
+                    downloadFile(`events-selected.ics`, toICS(evSel, artists), 'text/calendar');
+                  }} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}><Text>Seçili .ics</Text></Pressable>
+                </>
+              )}
             </View>
-            {artists.map((a) => (
+            {/** admin filtered + pagination */}
+            {(() => {
+              const adminFiltered = artists
+                .filter(a => (adminQ||'').trim()==='' || a.name.toLowerCase().includes(adminQ.toLowerCase()) || a.genre.toLowerCase().includes(adminQ.toLowerCase()))
+                .filter(a => !adminOnlyActive || a.active!==false)
+                .filter(a => !adminOnlyVerified || !!a.verified)
+                .filter(a => !adminOnlyLive || !!a.isLive);
+              const start = adminPage * ADMIN_PAGE_SIZE;
+              const pageItems = adminFiltered.slice(start, start + ADMIN_PAGE_SIZE);
+              return pageItems.map((a) => (
               <View key={a.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, borderTopWidth: 1, borderColor: '#f1f5f9' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Image source={{ uri: a.avatar }} style={{ width: 32, height: 32, borderRadius: 16, marginRight: 8 }} />
@@ -662,6 +766,7 @@ export default function App() {
                   <Text style={{ color: '#64748b', marginLeft: 6 }}>· {a.genre}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <Pressable onPress={() => setAdminSel(ids => ids.includes(a.id) ? ids.filter(x=>x!==a.id) : [...ids, a.id])} style={{ backgroundColor: adminSel.includes(a.id)? '#e0e7ff':'#fff', borderColor: adminSel.includes(a.id)? '#c7d2fe':'#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>{adminSel.includes(a.id)? 'Seçili':'Seç'}</Text></Pressable>
                   <Pressable onPress={() => setArtists(arr => arr.map(x => x.id===a.id ? { ...x, active: !(x.active!==false) } : x))} style={{ backgroundColor: a.active!==false ? '#ecfdf5':'#fff', borderColor: a.active!==false ? '#a7f3d0':'#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>{a.active!==false ? 'Aktif' : 'Pasif'}</Text></Pressable>
                   <Pressable onPress={() => setArtists(arr => arr.map(x => x.id===a.id ? { ...x, verified: !x.verified } : x))} style={{ backgroundColor: a.verified ? '#ecfeff':'#fff', borderColor: a.verified ? '#a5f3fc':'#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>{a.verified ? 'Doğrulandı' : 'Doğrula'}</Text></Pressable>
                   <Pressable onPress={() => setArtists(arr => arr.map(x => x.id===a.id ? { ...x, isLive: !x.isLive, startedAt: !x.isLive ? now() : x.startedAt } : x))} style={{ backgroundColor: a.isLive ? '#f0fdf4':'#fff', borderColor: a.isLive ? '#bbf7d0':'#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>{a.isLive ? 'Canlı' : 'Canlı Yap'}</Text></Pressable>
@@ -669,7 +774,23 @@ export default function App() {
                   <Pressable onPress={() => { if (mapApi.current?.centerTo) mapApi.current.centerTo(a.location.lat, a.location.lng); }} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>Haritada</Text></Pressable>
                 </View>
               </View>
-            ))}
+            ))})()}
+            {/* Pagination & selection actions */}
+            <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Pressable onPress={()=> setAdminPage(p=> Math.max(0, p-1))} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>◀︎</Text></Pressable>
+                <Text>Sayfa {adminPage+1}</Text>
+                <Pressable onPress={()=> setAdminPage(p=> p+1)} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>▶︎</Text></Pressable>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text>Seçili: {adminSel.length}</Text>
+                <Pressable onPress={()=> setAdminSel([])} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>Temizle</Text></Pressable>
+                <Pressable onPress={()=> setArtists(arr => arr.map(a => adminSel.length? (adminSel.includes(a.id)? {...a, active:true}:a) : ({...a, active:true})))} style={{ backgroundColor: '#ecfdf5', borderColor: '#a7f3d0', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>Aktif</Text></Pressable>
+                <Pressable onPress={()=> setArtists(arr => arr.map(a => adminSel.length? (adminSel.includes(a.id)? {...a, active:false}:a) : ({...a, active:false})))} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>Pasif</Text></Pressable>
+                <Pressable onPress={()=> setArtists(arr => arr.map(a => adminSel.length? (adminSel.includes(a.id)? {...a, verified:true}:a) : ({...a, verified:true})))} style={{ backgroundColor: '#ecfeff', borderColor: '#a5f3fc', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>Doğrula</Text></Pressable>
+                <Pressable onPress={()=> setArtists(arr => arr.map(a => adminSel.length? (adminSel.includes(a.id)? {...a, verified:false}:a) : ({...a, verified:false})))} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>Kaldır</Text></Pressable>
+              </View>
+            </View>
             <View /* admin event form */ style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderColor: '#f1f5f9', gap: 8 }}>
               <Text style={{ fontWeight: '700' }}>Etkinlik Ekle</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
