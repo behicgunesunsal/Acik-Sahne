@@ -139,6 +139,10 @@ export default function App() {
   const [user, setUser] = usePersistedState('as.user', null);
   const [tab, setTab] = useState('user'); // 'user' | 'admin'
   const [loginOpen, setLoginOpen] = useState(false);
+  const [stage, setStage] = usePersistedState('as.stage', 'splash'); // 'splash' | 'login' | 'profile' | 'main'
+  const [profile, setProfile] = usePersistedState('as.profile', null); // { name, role, artistId? }
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareType, setShareType] = useState('Müzik');
   const [follow, setFollow] = usePersistedState('as.follow', []);
   const [tips, setTips] = usePersistedState('as.tips', []);
   const [adminQ, setAdminQ] = useState('');
@@ -428,6 +432,60 @@ export default function App() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+      {/* Stage: Splash */}
+      {stage === 'splash' && (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+          <Image source={require('./assets/icon.png')} style={{ width: 96, height: 96, borderRadius: 20 }} />
+          <Text style={{ fontSize: 22, fontWeight: '700' }}>Açık Sahne</Text>
+          <Pressable onPress={() => setStage('login')} style={{ backgroundColor: '#111827', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 }}>
+            <Text style={{ color: 'white' }}>Devam</Text>
+          </Pressable>
+        </View>
+      )}
+      {/* Stage: Login */}
+      {stage === 'login' && !user && (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600' }}>Giriş yap</Text>
+          <Pressable onPress={signInGoogle} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 }}><Text>Google ile Giriş</Text></Pressable>
+          <Pressable onPress={signInApple} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 }}><Text>Apple ile Giriş</Text></Pressable>
+          <View style={{ height: 1, backgroundColor: '#e5e7eb', width: 200 }} />
+          {TEST_USERS.map(tu => (
+            <Pressable key={tu.id} onPress={() => { setUser(tu); if (Array.isArray(tu.followIds)) setFollow(tu.followIds); if (tu.isAdmin) setTab('admin'); setStage('profile'); }} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 }}>
+              <Text>{tu.name}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+      {/* Stage: Profile */}
+      {user && (!profile || stage === 'profile') && (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <View style={{ width: '100%', maxWidth: 420, backgroundColor: 'white', borderRadius: 14, borderColor: '#e5e7eb', borderWidth: 1, padding: 12, gap: 10 }}>
+            <Text style={{ fontSize: 18, fontWeight: '700' }}>Profil</Text>
+            <TextInput value={(profile?.name) ?? user.name} onChangeText={(t)=> setProfile(p => ({ ...(p||{}), name: t }))} placeholder="Ad" style={{ paddingVertical: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10 }} />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable onPress={()=> setProfile(p=> ({ ...(p||{}), role: 'Dinleyen' }))} style={{ backgroundColor: (profile?.role==='Dinleyen')? '#ecfdf5':'#fff', borderColor: (profile?.role==='Dinleyen')? '#a7f3d0':'#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}><Text>Dinleyen</Text></Pressable>
+              <Pressable onPress={()=> setProfile(p=> ({ ...(p||{}), role: 'Sanatçı' }))} style={{ backgroundColor: (profile?.role==='Sanatçı')? '#ecfeff':'#fff', borderColor: (profile?.role==='Sanatçı')? '#a5f3fc':'#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}><Text>Sanatçı</Text></Pressable>
+            </View>
+            {(profile?.role==='Sanatçı') && (
+              <View style={{ gap: 8 }}>
+                <Text>Sanatçı Hesabı</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {artists.map(a => (
+                    <Pressable key={a.id} onPress={()=> setProfile(p=> ({ ...(p||{}), artistId: a.id }))} style={{ backgroundColor: (profile?.artistId===a.id)? '#e0e7ff':'#fff', borderColor: (profile?.artistId===a.id)? '#c7d2fe':'#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}>
+                      <Text>{a.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
+            <Pressable onPress={()=> { if (!profile?.name) setProfile(p=> ({ ...(p||{}), name: user.name })); setStage('main'); }} style={{ backgroundColor: '#111827', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, alignSelf: 'flex-end' }}>
+              <Text style={{ color: 'white' }}>Kaydet ve Devam</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+      {/* Stop rendering rest until main */}
+      {stage !== 'main' && (stage==='splash' || (stage==='login' && !user) || (user && (!profile || stage==='profile'))) ? null : (
       <View style={{ padding: 12, gap: 12, flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -499,6 +557,60 @@ export default function App() {
         </View>
 
         {tab === 'user' && (
+        /* Quick share – only for artists */
+        (profile?.role === 'Sanatçı') && (
+          <View style={{ backgroundColor: 'white', borderRadius: 14, borderColor: '#e5e7eb', borderWidth: 1, padding: 8 }}>
+            <Text style={{ fontWeight: '700', marginBottom: 6 }}>Hızlı Paylaş</Text>
+            <View style={{ height: 160, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#e5e7eb' }}>
+              {Platform.OS !== 'web' ? (
+                <MobileMap artists={[]} events={[]} pos={pos} onSelect={()=>{}} setMapApi={(api)=> (mapApi.current = api)} />
+              ) : (
+                <WebMap artists={[]} events={[]} pos={pos} onSelect={()=>{}} />
+              )}
+              <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+                <Pressable onPress={()=> setShareOpen(true)} style={{ backgroundColor: '#111827', padding: 18, borderRadius: 999, opacity: 0.9 }}>
+                  <Text style={{ color: 'white', fontWeight: '700' }}>Paylaş</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        ))}
+        {shareOpen && (
+          <Modal transparent animationType="fade" onRequestClose={()=> setShareOpen(false)}>
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+              <View style={{ width: '100%', maxWidth: 360, backgroundColor: 'white', borderRadius: 12, padding: 12, gap: 10 }}>
+                <Text style={{ fontWeight: '700', fontSize: 16 }}>Etkinlik Türü</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {['Müzik','Sohbet','Dans'].map(t => (
+                    <Pressable key={t} onPress={()=> setShareType(t)} style={{ backgroundColor: (shareType===t)? '#ecfdf5':'#fff', borderColor: (shareType===t)? '#a7f3d0':'#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}>
+                      <Text>{t}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+                  <Pressable onPress={()=> setShareOpen(false)} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}><Text>Kapat</Text></Pressable>
+                  <Pressable onPress={async ()=> {
+                    try {
+                      await getLoc();
+                    } catch {}
+                    const aId = profile?.artistId || artists[0]?.id;
+                    if (!aId) { setShareOpen(false); return; }
+                    const nowD = new Date();
+                    const d = `${nowD.getFullYear()}-${String(nowD.getMonth()+1).padStart(2,'0')}-${String(nowD.getDate()).padStart(2,'0')}`;
+                    const st = `${String(nowD.getHours()).padStart(2,'0')}:${String(nowD.getMinutes()).padStart(2,'0')}`;
+                    const etH = new Date(nowD.getTime()+60*60000);
+                    const en = `${String(etH.getHours()).padStart(2,'0')}:${String(etH.getMinutes()).padStart(2,'0')}`;
+                    const id = (events[events.length-1]?.id || 0) + 1;
+                    setEvents([...events, { id, artistId: aId, date: d, start: st, end: en, venue: shareType, lat: pos.lat, lng: pos.lng }]);
+                    setArtists(arr => arr.map(x => x.id===aId ? { ...x, isLive: true, startedAt: now(), plannedMinutes: 60 } : x));
+                    Alert.alert('Paylaşıldı', `${shareType} etkinliği paylaşıldı`);
+                    setShareOpen(false);
+                  }} style={{ backgroundColor: '#111827', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}><Text style={{ color: 'white' }}>Paylaş</Text></Pressable>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        )}
         /* Map */
         Platform.OS !== 'web' ? (
           <MobileMap
