@@ -83,10 +83,11 @@ const seedArtists = () => {
 };
 
 const TEST_USERS = [
-  { id: 't-001', name: 'Test Kullanıcı 1', avatar: 'https://i.pravatar.cc/64?img=12', provider: 'google' },
-  { id: 't-002', name: 'Test Kullanıcı 2', avatar: 'https://i.pravatar.cc/64?img=22', provider: 'google' },
-  { id: 't-003', name: 'Test Sanatçı',   avatar: 'https://i.pravatar.cc/64?img=32', provider: 'apple' },
-  { id: 't-004', name: 'Test Admin',     avatar: 'https://i.pravatar.cc/64?img=42', provider: 'apple' },
+  { id: 't-001', name: 'Ayşe K.',  avatar: 'https://i.pravatar.cc/64?img=12', provider: 'google', followIds: [1,2,3] },
+  { id: 't-002', name: 'Mehmet T.',avatar: 'https://i.pravatar.cc/64?img=22', provider: 'google', followIds: [4,5,6] },
+  { id: 't-003', name: 'Sanatçı Demo', avatar: 'https://i.pravatar.cc/64?img=32', provider: 'apple',  followIds: [7,8] },
+  { id: 't-004', name: 'Admin Demo',   avatar: 'https://i.pravatar.cc/64?img=42', provider: 'apple',  isAdmin: true, followIds: [1,4,7] },
+  { id: 't-005', name: 'Ziyaretçi',    avatar: 'https://i.pravatar.cc/64?img=52', provider: 'google', followIds: [] },
 ];
 
 export default function App() {
@@ -458,7 +459,7 @@ export default function App() {
                 <Pressable onPress={() => { setLoginOpen(false); signInApple(); }} style={{ paddingHorizontal: 10, paddingVertical: 8 }}><Text>Apple ile Giriş</Text></Pressable>
                 <View style={{ height: 1, backgroundColor: '#e5e7eb', marginVertical: 4 }} />
                 {TEST_USERS.map(tu => (
-                  <Pressable key={tu.id} onPress={() => { setUser(tu); setLoginOpen(false); }} style={{ paddingHorizontal: 10, paddingVertical: 8 }}>
+                  <Pressable key={tu.id} onPress={() => { setUser(tu); if (Array.isArray(tu.followIds)) setFollow(tu.followIds); if (tu.isAdmin) setTab('admin'); setLoginOpen(false); }} style={{ paddingHorizontal: 10, paddingVertical: 8 }}>
                     <Text>{tu.name}</Text>
                   </Pressable>
                 ))}
