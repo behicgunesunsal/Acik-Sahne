@@ -123,6 +123,37 @@ export default function App() {
   const ADMIN_PAGE_SIZE = 20;
   const [adminForm, setAdminForm] = useState({ artistIdx: 0, date: todayISO(), start: '18:00', end: '19:00', venue: 'Açık Sahne', lat: 41.0, lng: 29.05 });
   const [dayOffset, setDayOffset] = useState(0);
+
+  const resetTestData = () => {
+    try {
+      setArtists(seedArtists());
+      setEvents(seedEvents());
+      setTips(tipsData);
+      setFollow([]);
+      setPos({ lat: 41.0, lng: 29.05 });
+      setG('Hepsi');
+      setGeo(220);
+      setSel(null);
+      setDetailOpen(false);
+      setShowLiveOnly(false);
+      setShowArtists(true);
+      setShowEvents(true);
+      setUser(null);
+      setTab('user');
+      setStage('splash');
+      setProfile(null);
+      setAdminQ('');
+      setAdminOnlyActive(false);
+      setAdminOnlyVerified(false);
+      setAdminOnlyLive(false);
+      setAdminPage(0);
+      setAdminSel([]);
+      setAdminForm({ artistIdx: 0, date: todayISO(), start: '18:00', end: '19:00', venue: 'Açık Sahne', lat: 41.0, lng: 29.05 });
+      Alert.alert('Sıfırlandı', 'Test verileri ve ayarlar sıfırlandı.');
+    } catch (e) {
+      Alert.alert('Hata', 'Sıfırlama sırasında bir sorun oluştu.');
+    }
+  };
   const filtered = useMemo(() => {
     const within = (a) => hav(pos, a.location) <= geo;
     const byGenre = (a) => g === 'Hepsi' || a.genre === g;
@@ -767,6 +798,12 @@ export default function App() {
             <Text style={{ marginRight: 16, color: '#475569' }}>Bahşiş adedi: {tips.length}</Text>
             <Text style={{ marginRight: 16, color: '#475569' }}>Toplam Bahşiş: ₺{tips.reduce((s,t)=>s+t.amount,0).toFixed(2)}</Text>
           </View>
+          <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ color: '#64748b', fontSize: 12 }}>Test verileri aktif</Text>
+            <Pressable onPress={resetTestData} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}>
+              <Text>Verileri Sıfırla</Text>
+            </Pressable>
+          </View>
         </View>
 
         {tab === 'admin' && (
@@ -840,7 +877,9 @@ export default function App() {
                 .filter(a => !adminOnlyLive || !!a.isLive);
               const start = adminPage * ADMIN_PAGE_SIZE;
               const pageItems = adminFiltered.slice(start, start + ADMIN_PAGE_SIZE);
-              return pageItems.map((a) => (
+              return (
+                <>
+                  {pageItems.map((a) => (
               <View key={a.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, borderTopWidth: 1, borderColor: '#f1f5f9' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Image source={{ uri: a.avatar }} style={{ width: 32, height: 32, borderRadius: 16, marginRight: 8 }} />
@@ -856,7 +895,10 @@ export default function App() {
                   <Pressable onPress={() => { if (mapApi.current?.centerTo) mapApi.current.centerTo(a.location.lat, a.location.lng); }} style={{ backgroundColor: '#fff', borderColor: '#e5e7eb', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}><Text>Haritada</Text></Pressable>
                 </View>
               </View>
-            ))})()}
+                  ))}
+                </>
+              );
+            })()}
             {/* Pagination & selection actions */}
             <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

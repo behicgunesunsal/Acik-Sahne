@@ -1320,6 +1320,32 @@ const App: React.FC = () => {
   const [tab, setTab] = useState<TabKey>("user");
   const [sel, setSel] = useState<any | null>(null);
 
+  const resetData = () => {
+    try {
+      const keys = [
+        "acik-sahne-artists","acik-sahne-pending","acik-sahne-events","acik-sahne-tips","acik-sahne-requests",
+        "acik-sahne-genre","acik-sahne-geo","acik-sahne-following","acik-sahne-walk","acik-sahne-alertsOnly",
+        "acik-sahne-pos","acik-sahne-role","acik-sahne-user"
+      ];
+      for (const k of keys) try { storage.removeItem(k as any); } catch {}
+      setArtists(seedArtists());
+      setPending(seedPending());
+      setEvents(eventsData as EventItem[]);
+      setTips(tipsData as Tip[]);
+      setRequests(requestsData as SongRequest[]);
+      setG("Hepsi");
+      setGeo(220);
+      setFollowing([]);
+      setSimulateWalk(false);
+      setAlertsOnly(false);
+      setPos({ lat: 41.0, lng: 29.05 });
+      setRole("Dinleyen");
+      setSel(null);
+      setTab("user");
+      alert("Test verileri ve ayarlar sıfırlandı.");
+    } catch {}
+  };
+
   // simulate walk
   useEffect(() => {
     if (!simulateWalk) return;
@@ -1537,6 +1563,7 @@ const App: React.FC = () => {
           <span className="text-xs text-gray-500">Prototype</span>
         </div>
         <div className="flex items-center gap-2">
+          <Button onClick={resetData} className="bg-white">Verileri Sıfırla</Button>
           {!user ? (
             <>
               <Button onClick={() => signIn("google")} className="bg-white">Google ile Giriş</Button>
