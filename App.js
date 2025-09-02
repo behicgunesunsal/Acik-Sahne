@@ -1,5 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, SafeAreaView, View, Text, Image, TextInput, Pressable, FlatList, Modal, Alert, Linking, ScrollView } from 'react-native';
+// Static test data (JSON)
+import artistsData from './assets/testdata/artists.json';
+import eventsData from './assets/testdata/events.json';
+import tipsData from './assets/testdata/tips.json';
 
 // Minimal JS-only version to avoid TS parsing issues and unblock "connecting..."
 
@@ -56,31 +60,8 @@ const GENRES = [
 const pad = (n) => String(n).padStart(2, '0');
 const todayISO = () => new Date().toISOString().slice(0,10);
 
-const seedArtists = () => {
-  const n = [
-    { name: 'Mahmut', genre: 'Akustik', avatar: 'https://i.pravatar.cc/64?img=12' },
-    { name: 'Ahmet', genre: 'Türkçe Pop', avatar: 'https://i.pravatar.cc/64?img=15' },
-    { name: 'Derya', genre: 'Caz', avatar: 'https://i.pravatar.cc/64?img=30' },
-    { name: 'Baran', genre: 'Rock', avatar: 'https://i.pravatar.cc/64?img=5' },
-    { name: 'Melis', genre: 'Klasik', avatar: 'https://i.pravatar.cc/64?img=47' },
-    { name: 'Emre', genre: 'Enstrümantal', avatar: 'https://i.pravatar.cc/64?img=49' },
-    { name: 'Zeynep', genre: 'Folk', avatar: 'https://i.pravatar.cc/64?img=41' },
-    { name: 'Efe', genre: 'Elektronik', avatar: 'https://i.pravatar.cc/64?img=22' },
-    { name: 'Sena', genre: 'Rap', avatar: 'https://i.pravatar.cc/64?img=10' },
-    { name: 'Kaan', genre: 'Latin', avatar: 'https://i.pravatar.cc/64?img=28' },
-  ];
-  return n.map((m, i) => ({
-    id: i + 1,
-    ...m,
-    isLive: Math.random() > 0.2,
-    verified: Math.random() > 0.5,
-    active: true,
-    followersCount: Math.floor(rand(50, 1200)),
-    startedAt: now() - Math.floor(rand(5, 90)) * 60 * 1000,
-    plannedMinutes: [45, 60, 75, 90][Math.floor(Math.random() * 4)],
-    location: { lat: rand(BBOX.minLat, BBOX.maxLat), lng: rand(BBOX.minLng, BBOX.maxLng) },
-  }));
-};
+// Use static JSON as deterministic test data
+const seedArtists = () => artistsData;
 
 const TEST_USERS = [
   { id: 't-001', name: 'Ayşe K.',  avatar: 'https://i.pravatar.cc/64?img=12', provider: 'google', followIds: [1,2,3] },
@@ -98,19 +79,7 @@ export default function App() {
     return { id: Math.random().toString(36).slice(2,10), name, avatar, provider };
   };
   const [artists, setArtists] = usePersistedState('as.artists', seedArtists());
-  const seedEvents = (as) => {
-    const today = new Date().toISOString().slice(0, 10);
-    return as.slice(0, 5).map((a, i) => ({
-      id: i + 1,
-      artistId: a.id,
-      date: today,
-      start: `${18 + (i % 3)}:00`,
-      end: `${19 + (i % 3)}:00`,
-      venue: 'Sahil Sahnesi',
-      lat: a.location.lat + rand(-0.005, 0.005),
-      lng: a.location.lng + rand(-0.005, 0.005),
-    }));
-  };
+  const seedEvents = () => eventsData;
   
   const openDirections = (lat, lng, label = 'Hedef') => {
     const gmaps = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
@@ -129,7 +98,7 @@ export default function App() {
   const [g, setG] = usePersistedState('as.genre', 'Hepsi');
   const [geo, setGeo] = usePersistedState('as.radius', 220);
   const [pos, setPos] = usePersistedState('as.pos', { lat: 41.0, lng: 29.05 });
-  const [events, setEvents] = usePersistedState('as.events', seedEvents(seedArtists()));
+  const [events, setEvents] = usePersistedState('as.events', seedEvents());
   const [sel, setSel] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [showLiveOnly, setShowLiveOnly] = useState(false);
@@ -144,7 +113,7 @@ export default function App() {
   const [shareOpen, setShareOpen] = useState(false);
   const [shareType, setShareType] = useState('Müzik');
   const [follow, setFollow] = usePersistedState('as.follow', []);
-  const [tips, setTips] = usePersistedState('as.tips', []);
+  const [tips, setTips] = usePersistedState('as.tips', tipsData);
   const [adminQ, setAdminQ] = useState('');
   const [adminOnlyActive, setAdminOnlyActive] = useState(false);
   const [adminOnlyVerified, setAdminOnlyVerified] = useState(false);

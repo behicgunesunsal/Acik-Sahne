@@ -1,0 +1,6 @@
+[
+  { "id": 1, "artistId": 1, "amount": 20, "currency": "TRY", "by": "Ayşe", "anon": false, "note": "Harikasın!", "at": 1725149900000 },
+  { "id": 2, "artistId": 3, "amount": 50, "currency": "TRY", "by": "Mehmet", "anon": true,  "note": "Süper performans", "at": 1725150000000 },
+  { "id": 3, "artistId": 7, "amount": 35, "currency": "TRY", "by": "Zeynep", "anon": false, "note": "Favorim!", "at": 1725150600000 }
+]
+

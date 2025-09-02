@@ -17,6 +17,12 @@ import {
 import { storage } from "./lib/storage";
 import { download } from "./lib/download";
 import { getCurrentPosition } from "./lib/location";
+// Static test data (JSON)
+import artistsData from "./assets/testdata/artists.json";
+import eventsData from "./assets/testdata/events.json";
+import tipsData from "./assets/testdata/tips.json";
+import requestsData from "./assets/testdata/requests.json";
+import pendingData from "./assets/testdata/pending.json";
 // File migrated to TSX and cross-platform utils wired in.
 
 // =====================
@@ -103,38 +109,9 @@ function hav(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
 // =====================
 // Seed data
 // =====================
-const seedArtists = () => {
-  const n = [
-    { name: "Mahmut", genre: "Akustik", avatar: "https://i.pravatar.cc/64?img=12" },
-    { name: "Ahmet", genre: "Türkçe Pop", avatar: "https://i.pravatar.cc/64?img=15" },
-    { name: "Derya", genre: "Caz", avatar: "https://i.pravatar.cc/64?img=30" },
-    { name: "Baran", genre: "Rock", avatar: "https://i.pravatar.cc/64?img=5" },
-    { name: "Melis", genre: "Klasik", avatar: "https://i.pravatar.cc/64?img=47" },
-    { name: "Emre", genre: "Enstrümantal", avatar: "https://i.pravatar.cc/64?img=49" },
-    { name: "Zeynep", genre: "Folk", avatar: "https://i.pravatar.cc/64?img=41" },
-    { name: "Efe", genre: "Elektronik", avatar: "https://i.pravatar.cc/64?img=22" },
-    { name: "Sena", genre: "Rap", avatar: "https://i.pravatar.cc/64?img=10" },
-    { name: "Kaan", genre: "Latin", avatar: "https://i.pravatar.cc/64?img=28" },
-  ];
-  return n.map((m, i) => ({
-    id: i + 1,
-    ...m,
-    isLive: Math.random() > 0.2,
-    verified: Math.random() > 0.5,
-    followersCount: Math.floor(rand(50, 1200)),
-    startedAt: now() - Math.floor(rand(5, 90)) * 60 * 1000,
-    plannedMinutes: [45, 60, 75, 90][Math.floor(Math.random() * 4)],
-    streamUrl: "https://example.com/canli",
-    location: { lat: rand(BBOX.minLat, BBOX.maxLat), lng: rand(BBOX.minLng, BBOX.maxLng) },
-  }));
-};
+const seedArtists = () => artistsData as any[];
 
-const seedPending = () =>
-  [
-    { name: "İlkim", genre: "Caz", avatar: "https://i.pravatar.cc/64?img=39" },
-    { name: "Rüzgar", genre: "Akustik", avatar: "https://i.pravatar.cc/64?img=8" },
-    { name: "Ada", genre: "Klasik", avatar: "https://i.pravatar.cc/64?img=45" },
-  ].map((n, i) => ({ id: 100 + i, ...n, submittedAt: now() - (i + 1) * 3600e3, docs: ["Kimlik", "Sahne izni"] }));
+const seedPending = () => pendingData as any[];
 
 const GENRES = [
   "Hepsi",
@@ -1328,9 +1305,9 @@ const App: React.FC = () => {
   // core data
   const [artists, setArtists] = useLS<any[]>("acik-sahne-artists", () => seedArtists());
   const [pending, setPending] = useLS<any[]>("acik-sahne-pending", () => seedPending());
-  const [events, setEvents] = useLS<EventItem[]>("acik-sahne-events", []);
-  const [tips, setTips] = useLS<Tip[]>("acik-sahne-tips", []);
-  const [requests, setRequests] = useLS<SongRequest[]>("acik-sahne-requests", []);
+  const [events, setEvents] = useLS<EventItem[]>("acik-sahne-events", () => eventsData as EventItem[]);
+  const [tips, setTips] = useLS<Tip[]>("acik-sahne-tips", () => tipsData as Tip[]);
+  const [requests, setRequests] = useLS<SongRequest[]>("acik-sahne-requests", () => requestsData as SongRequest[]);
 
   // map & filters
   const [g, setG] = useLS<string>("acik-sahne-genre", "Hepsi");

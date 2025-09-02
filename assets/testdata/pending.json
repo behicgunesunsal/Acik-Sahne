@@ -1,0 +1,6 @@
+[
+  { "id": 101, "name": "İlkim", "genre": "Caz", "avatar": "https://i.pravatar.cc/64?img=39", "submittedAt": 1725140000000, "docs": ["Kimlik", "Sahne izni"] },
+  { "id": 102, "name": "Rüzgar", "genre": "Akustik", "avatar": "https://i.pravatar.cc/64?img=8",  "submittedAt": 1725143600000, "docs": ["Kimlik", "Sahne izni"] },
+  { "id": 103, "name": "Ada",    "genre": "Klasik",  "avatar": "https://i.pravatar.cc/64?img=45", "submittedAt": 1725147200000, "docs": ["Kimlik", "Sahne izni"] }
+]
+

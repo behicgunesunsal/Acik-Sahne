@@ -1,0 +1,6 @@
+[
+  { "id": 1, "artistId": 1, "title": "Gesi Bağları", "message": "Annem için", "by": "Can", "tipId": 1, "at": 1725149950000, "status": "pending" },
+  { "id": 2, "artistId": 3, "title": "Autumn Leaves", "message": "Caz gecesi", "by": "Deniz", "tipId": 2, "at": 1725150100000, "status": "pending" },
+  { "id": 3, "artistId": 7, "title": "Divane Aşık Gibi", "message": "", "by": "Elif", "tipId": null, "at": 1725150200000, "status": "done" }
+]
+
